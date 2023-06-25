@@ -1,58 +1,106 @@
 import Notiflix from 'notiflix';
 import PixibayAPI from './js/pixibayAPI';
-
-// Установка пути к шаблонам представлений
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const formEl = document.querySelector('.search-form');
-const divEl = document.querySelector('.gallary');
+const galleryEl = document.querySelector('.gallery');
+const loadMoreButton = document.querySelector('.load-more');
 
+// instance of pixibayAPI
 const pixiInstance = new PixibayAPI();
 
-formEl.addEventListener('submit', async event => {
-  event.preventDefault();
+// render UI
+const renderData = arrData => {
+  const currentData = arrData
+    .map(el => {
+      return ` <div class="photo-card">
+                <a href="${el.largeImageURL}"><img src="${el.largeImageURL}" alt="${pixiInstance.query}" loading="lazy" width="300" height="250"/></a>
+                <div class="info">
+                    <p class="info-item">
+                        <span class="info-text">Likes</span>
+                        <b> ${el.likes}</b>
+                    </p>
+                    <p class="info-item">
+                        <span class="info-text">Views</span>
+                        <b>${el.views}</b>
+                    </p>
+                    <p class="info-item">
+                        <span class="info-text">Comments</span>
+                        <b>${el.comments}</b>
+                    </p>
+                    <p class="info-item">
+                        <span class="info-text">Downloads</span>
+                        <b>${el.downloads}</b>
+                    </p>
+                </div>
+            </div>`;
+    })
+    .join('');
 
-  const inputValue = event.target.firstElementChild.value;
+  galleryEl.insertAdjacentHTML('beforeend', currentData);
+
+  // simple lightbox
+  let lightbox = new SimpleLightbox('.gallery a', {
+    captionsData: 'alt',
+    captionPosition: 'bottom',
+    captionDelay: 250,
+  });
+
+  lightbox.on('show.simplelightbox', () => {
+    console.log('simple');
+  });
+};
+
+const handleSubmitButton = async event => {
+  event.preventDefault();
+  loadMoreButton.classList.add('is-hidden');
+  pixiInstance.query = event.target.firstElementChild.value;
+
+  // clear gallary before new request
+  galleryEl.innerHTML = '';
 
   // check input value
-  if (!inputValue) {
+  if (!event.target.firstElementChild.value) {
     Notiflix.Notify.failure('Input is empty');
     return;
   }
 
-  console.log(await pixiInstance.fetchPhotos(inputValue));
-});
+  try {
+    const carts = await pixiInstance.fetchPhotos();
+    console.log(carts);
+    const cartsArray = carts.data.hits;
+    pixiInstance.total_hits = carts.data.totalHits;
 
-/* <div class="photo-card">
-  <img src="" alt="" loading="lazy" />
-  <div class="info">
-    <p class="info-item">
-      <b>Likes</b>
-    </p>
-    <p class="info-item">
-      <b>Views</b>
-    </p>
-    <p class="info-item">
-      <b>Comments</b>
-    </p>
-    <p class="info-item">
-      <b>Downloads</b>
-    </p>
-  </div>
-</div>; */
+    // check data was'n be not empty array
+    if (cartsArray.length === 0) {
+      Notiflix.Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+      return;
+    }
 
-// axios.get(
-//   ${BASE_URL}?key=${API_KEY}&q=cats&image_type=photo&orientation=horizontal&safesearch=true
-// );
+    renderData(cartsArray);
+    loadMoreButton.classList.remove('is-hidden');
+  } catch (err) {
+    Notiflix.Notify.failure('Error 404');
+  }
+};
 
-// const fetchPhotos = async () => {
-//   try {
-//     const response = await axios.get(
-//       ${BASE_URL}?key=${API_KEY}&q=cats&image_type=photo&orientation=horizontal&safesearch=true
-//     );
-//     return await response.data;
-//   } catch (err) {
-//     console.log(err);
-//   }
-// };
+const handleLoadMoreButton = async () => {
+  const carts = await pixiInstance.fetchPhotos();
+  const cartsArray = carts.data.hits;
+  renderData(cartsArray);
 
-//"Sorry, there are no images matching your search query. Please try again."
+  // check total hits
+  if (pixiInstance.total_hits <= pixiInstance.page * pixiInstance.per_page) {
+    Notiflix.Notify.warning(
+      "We're sorry, but you've reached the end of search results."
+    );
+    loadMoreButton.classList.add('is-hidden');
+  }
+};
+
+// add event listener
+formEl.addEventListener('submit', handleSubmitButton);
+loadMoreButton.addEventListener('click', handleLoadMoreButton);
