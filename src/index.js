@@ -15,7 +15,7 @@ const renderData = arrData => {
   const currentData = arrData
     .map(el => {
       return ` <div class="photo-card">
-                <a href="${el.largeImageURL}"><img src="${el.largeImageURL}" alt="${pixiInstance.query}" loading="lazy" width="300" height="250"/></a>
+                <a href="${el.largeImageURL}"><img src="${el.largeImageURL}" alt="${pixiInstance.query}" loading="lazy" width="350" height="250"/></a>
                 <div class="info">
                     <p class="info-item">
                         <span class="info-text">Likes</span>
@@ -68,9 +68,15 @@ const handleSubmitButton = async event => {
 
   try {
     const carts = await pixiInstance.fetchPhotos();
-    console.log(carts);
     const cartsArray = carts.data.hits;
     pixiInstance.total_hits = carts.data.totalHits;
+
+    //   show total hits
+    if (carts) {
+      Notiflix.Notify.success(
+        `Hooray! We found ${carts.data.totalHits} images.`
+      );
+    }
 
     // check data was'n be not empty array
     if (cartsArray.length === 0) {
@@ -99,6 +105,16 @@ const handleLoadMoreButton = async () => {
     );
     loadMoreButton.classList.add('is-hidden');
   }
+
+  // scroll by 2 cart height
+  const { height: cardHeight } = document
+    .querySelector('.gallery')
+    .firstElementChild.getBoundingClientRect();
+
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
 };
 
 // add event listener
