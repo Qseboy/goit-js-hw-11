@@ -72,7 +72,7 @@ const handleSubmitButton = async event => {
     pixiInstance.total_hits = carts.data.totalHits;
 
     //   show total hits
-    if (carts) {
+    if (carts && carts.data.totalHits > 0) {
       Notiflix.Notify.success(
         `Hooray! We found ${carts.data.totalHits} images.`
       );
