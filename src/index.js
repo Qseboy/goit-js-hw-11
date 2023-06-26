@@ -94,27 +94,31 @@ const handleSubmitButton = async event => {
 };
 
 const handleLoadMoreButton = async () => {
-  const carts = await pixiInstance.fetchPhotos();
-  const cartsArray = carts.data.hits;
-  renderData(cartsArray);
+  try {
+    const carts = await pixiInstance.fetchPhotos();
+    const cartsArray = carts.data.hits;
+    renderData(cartsArray);
 
-  // check total hits
-  if (pixiInstance.total_hits <= pixiInstance.page * pixiInstance.per_page) {
-    Notiflix.Notify.warning(
-      "We're sorry, but you've reached the end of search results."
-    );
-    loadMoreButton.classList.add('is-hidden');
+    // check total hits
+    if (pixiInstance.total_hits <= pixiInstance.page * pixiInstance.per_page) {
+      Notiflix.Notify.warning(
+        "We're sorry, but you've reached the end of search results."
+      );
+      loadMoreButton.classList.add('is-hidden');
+    }
+
+    // scroll by 2 cart height
+    const { height: cardHeight } = document
+      .querySelector('.gallery')
+      .firstElementChild.getBoundingClientRect();
+
+    window.scrollBy({
+      top: cardHeight * 2,
+      behavior: 'smooth',
+    });
+  } catch (err) {
+    Notiflix.Notify.failure('Error 404');
   }
-
-  // scroll by 2 cart height
-  const { height: cardHeight } = document
-    .querySelector('.gallery')
-    .firstElementChild.getBoundingClientRect();
-
-  window.scrollBy({
-    top: cardHeight * 2,
-    behavior: 'smooth',
-  });
 };
 
 // add event listener
